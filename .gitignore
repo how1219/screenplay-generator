@@ -1,0 +1,32 @@
+# Environment
+.env
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Generated files
+generated_screenplays/
+generated_images/
+*.pdf
+*.png
+*.jpg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Checkpoints
+checkpoints/
+*.db
+*.db-shm
+*.db-wal

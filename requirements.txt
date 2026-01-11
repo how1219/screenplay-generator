@@ -1,0 +1,21 @@
+# Core LangGraph and LangChain
+langgraph==0.2.45
+langchain==0.3.7
+langchain-anthropic==0.2.4
+# langchain-openai not needed - using Claude + Google only
+langchain-google-genai==2.0.5
+
+# PDF Generation
+reportlab==4.2.5
+pillow==11.0.0
+
+# Image Generation (Google Imagen)
+requests==2.32.3
+
+# Environment and utilities
+python-dotenv==1.0.1
+pydantic==2.10.3
+typing-extensions==4.12.2
+
+# Optional: Local database for checkpointing
+langgraph-checkpoint-sqlite==2.0.2
