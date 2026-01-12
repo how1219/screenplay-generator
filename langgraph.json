@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "screenplay_generator": "./src/agent.py:graph"
+  },
+  "env": ".env"
+}

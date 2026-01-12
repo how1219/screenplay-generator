@@ -21,7 +21,7 @@ class CharacterSchema(BaseModel):
 
 class CharacterList(BaseModel):
     """List of characters for the screenplay."""
-    characters: List[CharacterSchema] = Field(description="List of 3-5 main characters")
+    characters: List[CharacterSchema] = Field(description="List of 2-3 main characters")
 
 
 def create_character_agent(state: dict) -> dict:
@@ -58,7 +58,7 @@ CRITICAL for Visual Description:
 - Overall demeanor and posture
 - Use photorealistic, cinematic style language
 
-Focus on 1-3 main characters (protagonist, antagonist, 1-3 supporting)."""
+Focus on 1-3 main characters (protagonist, antagonist, and optionally 1 key supporting character)."""
 
     user_prompt = f"""Logline: {state['logline']}
 Genre: {state['genre']}

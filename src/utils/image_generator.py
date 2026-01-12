@@ -3,7 +3,9 @@ Character image generation using Gemini 2.5 Flash.
 """
 import os
 from pathlib import Path
-import requests
+import urllib.request
+import urllib.error
+import json
 from typing import Optional
 import base64
 
@@ -15,7 +17,7 @@ class ImageGenerator:
         self.output_dir = Path(os.getenv("IMAGES_DIR", "generated_images"))
         self.output_dir.mkdir(exist_ok=True)
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
-        self.model = "gemini-2.5-flash-image"  
+        self.model = "gemini-2.5-flash-image"
 
     def generate_character_image(
         self,
@@ -41,11 +43,7 @@ class ImageGenerator:
             print(f"🎨 Generating image for {character_name} using Gemini 2.5 Flash...")
 
             # Use Gemini API endpoint for image generation
-            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
-
-            headers = {
-                "Content-Type": "application/json",
-            }
+            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.google_api_key}"
 
             payload = {
                 "contents": [
@@ -65,65 +63,65 @@ class ImageGenerator:
                 }
             }
 
-            # Make API request
-            response = requests.post(
-                f"{gemini_url}?key={self.google_api_key}",
-                headers=headers,
-                json=payload
+            # Use urllib instead of requests to avoid LangSmith tracing recursion issues
+            req = urllib.request.Request(
+                gemini_url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers={"Content-Type": "application/json"}
             )
 
-            if response.status_code == 200:
-                result = response.json()
+            try:
+                with urllib.request.urlopen(req, timeout=30) as response:
+                    if response.status != 200:
+                        print(f"❌ Error from Gemini API: {response.status}")
+                        return None
 
-                # Debug: Print full response structure
-                print(f"   DEBUG: Response keys: {result.keys()}")
+                    data = json.loads(response.read().decode('utf-8'))
+            except urllib.error.HTTPError as e:
+                print(f"❌ HTTP Error from Gemini API: {e.code}")
+                return None
+            except urllib.error.URLError as e:
+                print(f"❌ Connection Error: {e.reason}")
+                return None
 
-                # Extract image data from Gemini response
-                if "candidates" in result and len(result["candidates"]) > 0:
-                    candidate = result["candidates"][0]
-                    print(f"   DEBUG: Candidate keys: {candidate.keys()}")
+            # Process response immediately
+            try:
+                candidates = data.get("candidates", [])
 
-                    if "content" in candidate:
-                        content = candidate["content"]
-                        print(f"   DEBUG: Content keys: {content.keys()}")
-                        parts = content.get("parts", [])
-                        print(f"   DEBUG: Number of parts: {len(parts)}")
-
-                        for i, part in enumerate(parts):
-                            print(f"   DEBUG: Part {i} keys: {part.keys()}")
-
-                            if "inlineData" in part:
-                                # Image is returned as inline data
-                                image_data_b64 = part["inlineData"]["data"]
-                                mime_type = part["inlineData"]["mimeType"]
-
-                                # Decode base64 image
-                                image_data = base64.b64decode(image_data_b64)
-
-                                # Save image with appropriate extension
-                                safe_name = character_name.replace(" ", "_").replace(".", "").lower()
-                                ext = "png" if "png" in mime_type else "jpg"
-                                image_path = self.output_dir / f"{safe_name}.{ext}"
-
-                                with open(image_path, 'wb') as f:
-                                    f.write(image_data)
-
-                                print(f"✓ Generated image: {image_path}")
-                                return str(image_path)
-
-                    print(f"⚠️  No image data in response for {character_name}")
-                    print(f"   Full response: {result}")
+                if not candidates:
+                    print(f"⚠️  No candidates in response")
                     return None
-                else:
-                    print(f"⚠️  No candidates in response for {character_name}")
-                    print(f"   Response: {result}")
-                    return None
-            else:
-                print(f"❌ Error from Gemini API: {response.status_code}")
-                print(f"   Response: {response.text}")
+
+                parts = candidates[0].get("content", {}).get("parts", [])
+
+                # Find the image data in parts
+                for part in parts:
+                    inline_data = part.get("inlineData")
+                    if inline_data:
+                        # Extract and process image immediately
+                        image_b64 = inline_data.get("data")
+                        mime = inline_data.get("mimeType", "image/png")
+
+                        # Decode and save
+                        img_bytes = base64.b64decode(image_b64)
+
+                        safe_name = character_name.replace(" ", "_").replace(".", "").lower()
+                        ext = "png" if "png" in mime else "jpg"
+                        image_path = self.output_dir / f"{safe_name}.{ext}"
+
+                        with open(image_path, 'wb') as f:
+                            f.write(img_bytes)
+
+                        print(f"✓ Generated image: {image_path}")
+                        return str(image_path)
+
+                print(f"⚠️  No image data in response")
+                return None
+
+            except Exception as parse_error:
+                print(f"❌ Error parsing response")
                 return None
 
         except Exception as e:
-            print(f"❌ Error generating image for {character_name}: {e}")
-            print("   Tip: Make sure your Google API key has access to Gemini API with image generation")
+            print(f"❌ Error generating image: {str(e)[:100]}")
             return None

@@ -30,3 +30,20 @@ checkpoints/
 *.db
 *.db-shm
 *.db-wal
+
+# --- Add these to the bottom ---
+
+# LangGraph Local State & Studio
+.langgraph_api/
+*.pckl
+
+# Python Distribution/Build Artifacts
+# These are generated when you run setup.py or pip install
+*.egg-info/
+build/
+dist/
+PKG-INFO
+SOURCES.txt
+dependency_links.txt
+top_level.txt
+requires.txt

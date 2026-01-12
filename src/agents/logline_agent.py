@@ -9,6 +9,7 @@ import os
 
 class LoglineSchema(BaseModel):
     """Screenplay logline with genre and tone."""
+    title: str = Field(description="Compelling screenplay title (2-5 words, memorable and marketable)")
     logline: str = Field(description="One-sentence logline (max 40 words)")
     genre: str = Field(description="Genre (e.g., Drama, Thriller, Comedy, Horror, Sci-Fi)")
     tone: str = Field(description="Tone (e.g., Dark, Humorous, Suspenseful, Heartwarming)")
@@ -32,11 +33,16 @@ def create_logline_agent(state: dict) -> dict:
     # Use structured output
     structured_llm = llm.with_structured_output(LoglineSchema)
 
-    system_prompt = """You are an expert screenplay consultant specializing in loglines.
+    system_prompt = """You are an expert screenplay consultant specializing in loglines and titles.
 
-Your task is to create a compelling, professional logline from a story idea.
+Your task is to create a compelling title and professional logline from a story idea.
 
-A great logline should:
+A great TITLE should:
+- Be 2-5 words, memorable and marketable
+- Capture the essence, theme, or hook of the story
+- Be intriguing without being too vague
+
+A great LOGLINE should:
 - Be ONE sentence (max 40 words)
 - Include the protagonist
 - State the inciting incident
@@ -47,7 +53,7 @@ A great logline should:
     user_prompt = f"""Story Idea:
 {state['idea']}
 
-Create a professional logline with genre and tone."""
+Create a compelling title and professional logline with genre and tone."""
 
     messages = [
         SystemMessage(content=system_prompt),
@@ -57,9 +63,11 @@ Create a professional logline with genre and tone."""
     try:
         response = structured_llm.invoke(messages)
         print(response)
-        print(f"Logline generated: {response.logline[:100]}...")
+        print(f"Title: {response.title}")
+        print(f"Logline: {response.logline[:100]}...")
 
         return {
+            "title": response.title,
             "logline": response.logline,
             "genre": response.genre,
             "tone": response.tone
@@ -67,6 +75,7 @@ Create a professional logline with genre and tone."""
     except Exception as e:
         print(f"Error in logline generation: {e}")
         return {
+            "title": "Untitled",
             "logline": "A compelling story unfolds.",
             "genre": "Drama",
             "tone": "Dramatic"
